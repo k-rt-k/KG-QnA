@@ -29,7 +29,6 @@ def train(model, optimizer, data_loader, batch_size=128, num_epochs=100):
     for epoch in range(num_epochs):
         total_loss = total_examples = 0
         for head_index, rel_type, tail_index in data_loader:
-            print(head_index.shape, rel_type.shape, tail_index.shape)
             optimizer.zero_grad()
             loss = model.loss(head_index, rel_type, tail_index)
             loss.backward()

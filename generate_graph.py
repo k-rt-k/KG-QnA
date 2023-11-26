@@ -8,7 +8,7 @@ import networkx as nx
 from lm import Embedder
 
 def removeSpaces(string:str)->str:
-    return string.replace(" ", "_")
+    return string.strip().replace(" ", "_")
 
 def graph_to_ttl(csv_file:str='IMDB-Movie-Data.csv',filename:str='imdb_kg.ttl')->rdflib.graph:
     # Create an RDF graph
@@ -45,7 +45,7 @@ def graph_to_ttl(csv_file:str='IMDB-Movie-Data.csv',filename:str='imdb_kg.ttl')-
     g.serialize(filename, format='turtle')
     return g
 
-attr_to_num = {'movie2actor':1,'movie2genre':2,'movie2director':3,'movie2year':4,'movie2desc':5}
+attr_to_num = {'movie2actor':0,'movie2genre':1,'movie2director':2,'movie2year':3,'movie2desc':4}
 
 def graph_to_nx(csv_file:str='IMDB-Movie-Data.csv',save_desc:bool=False,doc_mapping=None)->nx.graph:
     G = nx.Graph()
@@ -56,7 +56,7 @@ def graph_to_nx(csv_file:str='IMDB-Movie-Data.csv',save_desc:bool=False,doc_mapp
 
         # Iterate through the CSV data and add triples to the graph
         for row in reader:
-            movie_uri = removeSpaces(row["Title"])
+            movie_uri = f"movie:{removeSpaces(row['Title'])}"
             # actor_uri = URIRef(ns[row['actor_id']])
             for actor in row['Actors'].split(','):
                 actor_uri = f'actor:{removeSpaces(actor)}'
@@ -74,7 +74,7 @@ def graph_to_nx(csv_file:str='IMDB-Movie-Data.csv',save_desc:bool=False,doc_mapp
             G.add_edges_from([
                     (movie_uri, director_uri, {'type': attr_to_num['movie2director']}),
                     # (director_uri, movie_uri, {'type': 'director2movie'}),
-                    (movie_uri, row['Year'], {'type': attr_to_num['movie2year']})
+                    (movie_uri, f"year:{row['Year']}", {'type': attr_to_num['movie2year']})
                 ])
             if save_desc:
                 G.add_edges_from([
