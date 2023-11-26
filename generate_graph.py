@@ -5,6 +5,7 @@ from rdflib import Graph, Namespace, Literal, URIRef
 import rdflib.term as rdflib_term
 from rdflib.namespace import RDF as rdf
 import networkx as nx
+from lm import Embedder
 
 def removeSpaces(string:str)->str:
     return string.replace(" ", "_")
@@ -44,9 +45,9 @@ def graph_to_ttl(csv_file:str='IMDB-Movie-Data.csv',filename:str='imdb_kg.ttl')-
     g.serialize(filename, format='turtle')
     return g
 
-attr_to_num = {'movie2actor':1,'movie2genre':2,'movie2director':3,'movie2year':4}
+attr_to_num = {'movie2actor':1,'movie2genre':2,'movie2director':3,'movie2year':4,'movie2desc':5}
 
-def graph_to_nx(csv_file:str='IMDB-Movie-Data.csv')->nx.graph:
+def graph_to_nx(csv_file:str='IMDB-Movie-Data.csv',save_desc:bool=False,doc_mapping=None)->nx.graph:
     G = nx.Graph()
     # Load IMDb data from CSV file (modify the filename accordingly)
 
@@ -75,4 +76,9 @@ def graph_to_nx(csv_file:str='IMDB-Movie-Data.csv')->nx.graph:
                     # (director_uri, movie_uri, {'type': 'director2movie'}),
                     (movie_uri, row['Year'], {'type': attr_to_num['movie2year']})
                 ])
+            if save_desc:
+                G.add_edges_from([
+                    (movie_uri, f'desc:{doc_mapping(row["Description"])}', {'type': attr_to_num['movie2desc']})
+                ])
+                ### doc_mapping fn will embed the description to a vector and return an id
     return G
