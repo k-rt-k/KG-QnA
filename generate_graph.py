@@ -2,10 +2,8 @@ import csv
 import pandas as pd
 import rdflib
 from rdflib import Graph, Namespace, Literal, URIRef
-import rdflib.term as rdflib_term
-from rdflib.namespace import RDF as rdf
 import networkx as nx
-from lm import Embedder
+# from lm import Embedder
 
 def removeSpaces(string:str)->str:
     return string.strip().replace(" ", "_")
@@ -15,7 +13,20 @@ def graph_to_ttl(csv_file:str='IMDB-Movie-Data.csv',filename:str='imdb_kg.ttl')-
     g = Graph()
 
     # Define namespaces
-    ns = Namespace("ns:")
+    movie_ns = Namespace("movie:")
+    actor_ns = Namespace("actor:")
+    director_ns = Namespace("director:")
+    year_ns = Namespace("year:")
+    genre_ns = Namespace("genre:")
+    relation_ns = Namespace("relation:")
+    
+    g.bind("movie", movie_ns)
+    g.bind("actor", actor_ns)
+    g.bind("director", director_ns)
+    g.bind("year", year_ns)
+    g.bind("genre", genre_ns)
+    g.bind("relation", relation_ns)
+
 
     # Load IMDb data from CSV file (modify the filename accordingly)
     with open(csv_file, 'r', encoding='utf-8') as file:
@@ -23,25 +34,20 @@ def graph_to_ttl(csv_file:str='IMDB-Movie-Data.csv',filename:str='imdb_kg.ttl')-
 
         # Iterate through the CSV data and add triples to the graph
         for row in reader:
-            movie_uri = URIRef(ns[removeSpaces(row["Title"])])
-            # actor_uri = URIRef(ns[row['actor_id']])
+            movie_uri = URIRef(movie_ns[removeSpaces(row["Title"])])
             for actor in row['Actors'].split(','):
-                actor_uri = URIRef(ns[f'actor:{removeSpaces(actor)}'])
-                g.add((actor_uri, ns.hasName, Literal(actor)))
-                g.add((movie_uri, ns.hasActor, actor_uri))
+                actor_uri = URIRef(actor_ns[f'{removeSpaces(actor)}'])
+                g.add((movie_uri, relation_ns.hasActor, actor_uri))
             
             for genre in row['Genre'].split(','):
-                genre_uri = URIRef(ns[f'genre:{genre}'])
-                g.add((movie_uri, ns.hasGenre, genre_uri))
-            director_uri = URIRef(ns[f'director:{removeSpaces(row["Director"])}'])
-            # director_resource = g.resource(director_uri)
-            g.add((movie_uri, ns.directed_by, director_uri))
+                genre_uri = URIRef(genre_ns[f'{genre}'])
+                g.add((movie_uri, relation_ns.hasGenre, genre_uri))
+            director_uri = URIRef(director_ns[f'{removeSpaces(row["Director"])}'])
+            g.add((movie_uri, relation_ns.directedBy, director_uri))
 
             # Add triples representing movies, actors, and their relationships
-            g.add((movie_uri, ns.hasTitle, Literal(row['Title'])))
-            g.add((movie_uri, ns.hasReleaseYear, Literal(row['Year'])))
-            # g.add((movie_uri, ns.hasReleaseYear, Literal(row['Year'], datatype=ns.xsd.int)))
-    # Serialize the RDF graph to a file (modify the filename accordingly)
+            g.add((movie_uri, relation_ns.hasReleaseYear, URIRef(year_ns[row['Year']])))
+
     g.serialize(filename, format='turtle')
     return g
 
